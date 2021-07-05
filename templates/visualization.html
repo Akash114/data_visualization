@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4"></script>
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+<style>
+    .card{
+        align-items: center;
+        padding: 20px;
+        border: 1px solid;
+        box-shadow: 5px 10px #888888;
+        width: 900px;
+        margin: 0 auto; /* Added */
+        float: none; /* Added */
+        margin-top: 40px;
+        margin-bottom: 10px; /* Added */
+
+    }
+
+</style>
+
+      <script type="text/javascript">
+       function upload(event) {
+        event.preventDefault();
+        var data = new FormData($('form').get(0));
+
+        $.ajax({
+            url: '/visualization/columns',
+            type: 'POST',
+            data: data,
+            cache: false,
+            processData: false,
+            contentType: false,
+            success: function(data) {
+
+                alert(data.msg)
+                if(data.msg !== 'File Uploaded'){
+                    return
+                }
+                document.getElementById("selector").style.display ="block";
+                for(i=0;i<data.data.length;++i)
+                {
+                       $('#columns').append(`<option value="${data.data[i]}">
+                                               ${data.data[i]}
+                                          </option>`)
+                        $('#columns2').append(`<option value="${data.data[i]}">
+                                               ${data.data[i]}
+                                          </option>`)
+                }
+            }
+        });
+        return false;
+        }
+
+       function choice() {
+           var value = document.getElementById("selector").value;
+           if(value === 'single'){
+               document.getElementById("single-variable-btn").style.display ="block";
+               document.getElementById("two-variable-btn").style.display ="None";
+               document.getElementById("columns").style.display ="block";
+               document.getElementById("columns2").style.display ="None";
+           }
+           if(value === 'two'){
+               document.getElementById("single-variable-btn").style.display ="None";
+               document.getElementById("two-variable-btn").style.display ="block";
+               document.getElementById("columns").style.display ="block";
+               document.getElementById("columns2").style.display ="block";
+           }
+       };
+
+
+        function visual(event) {
+        event.preventDefault();
+        var data = new FormData($('form').get(0));
+
+        $.ajax({
+            url: '/visualization/visualize',
+            type: 'POST',
+            data: data,
+            cache: false,
+            processData: false,
+            contentType: false,
+            success: function(data) {
+                document.getElementById("chartContainer").innerHTML = '&nbsp;';
+                document.getElementById("chartContainer").innerHTML = '<canvas id="chart" width="800" height="500"></canvas>';
+                document.getElementById("chart").style.display ="block";
+                let ctx = document.getElementById("chart").getContext("2d");
+                let chart = new Chart(ctx, {
+                  type: "bar",
+                  data: {
+                     labels: data.data.labels,
+                     datasets: [
+                        {
+                          label: 'Count',
+                          backgroundColor: "#79AEC8",
+                            borderColor: "#417690",
+                          data: data.data.data
+                        }
+                     ]
+                  },
+                  options: {
+                     title: {
+                        text: data.title,
+                        display: true,
+                         scales: {
+                            yAxes: [{
+                                ticks: {
+                                beginAtZero: true
+                                }
+                            }]
+                        }
+
+                     }
+                  }
+                });},});
+        return false;
+        }
+
+       function two_variables(event) {
+        event.preventDefault();
+        var data = new FormData($('form').get(0));
+
+        $.ajax({
+            url: '/visualization/two_variables',
+            type: 'POST',
+            data: data,
+            cache: false,
+            processData: false,
+            contentType: false,
+            success: function(data) {
+                document.getElementById("chartContainer").innerHTML = '&nbsp;';
+                document.getElementById("chartContainer").innerHTML = '<canvas id="chart" width="800" height="500"></canvas>';
+                document.getElementById("chart").style.display ="block";
+                let ctx = document.getElementById("chart").getContext("2d");
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.clearRect(0, 0, 700, 500);
+
+                let chart = new Chart(ctx, {
+                  type: "bar",
+                  data: {
+                     labels: data.data.labels,
+                     datasets: data.data.dataset,
+                  },
+                  options: {
+                     title: {
+                         text: data.title,
+                         display: true,
+                     },
+                      responsive: true,
+                      scales: {
+                            yAxes: [{
+                                ticks: {
+                                beginAtZero: true
+                                }
+                            }]
+                        }
+                     }
+                });
+                },});
+        return false;
+        }
+
+
+    </script>
+
+
+</head>
+<body style="background-color:#F5F5F5">
+<div class="container">
+    <div class="card">
+{% load crispy_forms_tags %}
+    <h3>Visualize your data in few steps.</h3>
+{% csrf_token %}
+            <form action="" method="post" id="file-upload-form" enctype="multipart/form-data" style="margin-top: 30px">
+                {% csrf_token %}
+                {{ form|crispy }}
+                <button type="button" class="btn btn-primary" id='upload-btn' style="margin-top: 40px;margin-bottom: 40px;" onclick="upload(event)">Upload</button><br/>
+
+                <select id="selector" name="selector" style="display:None;margin-bottom: 30px" onchange="choice()">
+                    <option>Select Type Of Visualization</option>
+                    <option value="single">Single Variable(i.e,Gender distribution in Gender column.)</option>
+                    <option value="two">Two Variable(i.e,Gender distribution in different state.)</option>
+                </select>
+
+
+
+                    <select  id ="columns" name="columns" class="form-control input-lg" style="display: None">
+                        <option>Select Column from first raw</option>
+                    </select><br>
+                    <select id ="columns2" name="columns2" class="form-control input-lg" style="display: None">
+                        <option>Select Column from first raw</option>
+                    </select>
+                    <button type="button" class="btn btn-primary" id='two-variable-btn' style="display: None;margin-top: 40px;margin-bottom: 40px;" onclick="two_variables(event)">Visualize</button>
+                    <button type="button" class="btn btn-primary" id='single-variable-btn' style="display: None;margin-top: 40px;margin-bottom: 40px;" onclick="visual(event)">Visualize</button>
+                <div id ="chartContainer">
+                <canvas id="chart" width="700" height="500" style="display: None"></canvas>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+</body>
+</html>
